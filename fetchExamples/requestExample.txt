@@ -1,0 +1,6 @@
+|| Weather request ||
+https://api.openweathermap.org/data/3.0/onecall?lat=25.6802019&lon=-100.315258&units=metric&lang=en&exclude=minutely,alerts&appid=<ID>
+
+
+|| Air pollution request ||
+http://api.openweathermap.org/data/2.5/air_pollution?lat=25.6802019&lon=-100.315258&appid=<ID>
