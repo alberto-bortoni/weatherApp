@@ -18,9 +18,8 @@
 import 'package:flutter/material.dart';
 import 'myapp_styles.dart';
 import 'dart:async';
-import 'package:cron/cron.dart';
 import 'weather_fetcher.dart';
-import 'package:flutter/foundation.dart';
+import 'package:background_fetch/background_fetch.dart';
 
 // ********************************************************************************************* //
 // *                                     HOME SCREEN CLASS                                     * //
@@ -161,23 +160,26 @@ class _HomeScreenState extends State<HomeScreen> {
       updateTime();
     });
 
-    // get current values every 10 minutes during the day
-    final cron1 = Cron();
-    cron1.schedule(Schedule.parse('*/10 5-23 * * *'), () async {
-      await _updateCurrentValues();
-      if (kDebugMode) {
-        print('updating current services');
-      }
-    });
+    // Configure background fetch to get weather data even on bacground
+    BackgroundFetch.configure(
+      BackgroundFetchConfig(
+        minimumFetchInterval: 15, //minutes
+        forceAlarmManager: false,
+        stopOnTerminate: true,
+        startOnBoot: false,
+        enableHeadless: true,
+      ),
+      (String taskId) async {
+        // Fetch event callback
+        await _updateCurrentValues();
 
-    // get daily averages everyday at 5am, try 10 times
-    final cron2 = Cron();
-    cron2.schedule(Schedule.parse('*/6 5 * * *'), () async {
-      await _updateDailyValues();
-      if (kDebugMode) {
-        print('updating daily services');
-      }
-    });
+        // Check if it's 5 am
+        DateTime now = DateTime.now();
+        if (now.hour == 5) {
+          await _updateDailyValues();
+        }
+      },
+    );
   }
 
   //|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*
