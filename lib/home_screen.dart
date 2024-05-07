@@ -57,20 +57,33 @@ class _HomeScreenState extends State<HomeScreen> {
   late Map<String, dynamic> dailyValues = weatherServices.dailyValuesDefault;
   late Map<String, dynamic> currentValues = weatherServices.currentValuesDefault;
 
+  bool dailyValuesAged = true;
+  bool currentValuesAged = true;
+
   //|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*|*
   //|* ----------------------------------------- CLASS METHODS
-  void _updateDailyValues() async {
+  Future<void> _updateDailyValues() async {
     Map<String, dynamic> newDailyValues = await weatherServices.dailyWeatherServices();
     setState(() {
       dailyValues = newDailyValues;
     });
   }
 
-  void _updateCurrentValues() async {
+  Future<void> _updateCurrentValues() async {
     Map<String, dynamic> newCurrentValues = await weatherServices.currentWeatherServices();
     setState(() {
       currentValues = newCurrentValues;
     });
+  }
+
+  bool isDataOld() {
+    // get the timestamps
+    DateTime now = DateTime.now().toLocal();
+
+    bool currentValuesAged = now.difference(currentValues['dt']).inMinutes > 21;
+    bool dailyValuesAged = now.difference(dailyValues['dt']).inHours > 25;
+
+    return (dailyValuesAged || currentValuesAged);
   }
 
   void updateTime() {
@@ -148,18 +161,19 @@ class _HomeScreenState extends State<HomeScreen> {
       updateTime();
     });
 
-    // Update current predictions
-    Timer.periodic(const Duration(minutes: 10), (timer) {
-      weatherServices.currentWeatherServices();
+    // get current values every 10 minutes during the day
+    final cron1 = Cron();
+    cron1.schedule(Schedule.parse('*/10 5-23 * * *'), () async {
+      await _updateCurrentValues();
       if (kDebugMode) {
         print('updating current services');
       }
     });
 
-    // get daily averages everytime at 5am
-    final cron = Cron();
-    cron.schedule(Schedule.parse('0 5 * * *'), () async {
-      weatherServices.dailyWeatherServices();
+    // get daily averages everyday at 5am, try 10 times
+    final cron2 = Cron();
+    cron2.schedule(Schedule.parse('*/6 5 * * *'), () async {
+      await _updateDailyValues();
       if (kDebugMode) {
         print('updating daily services');
       }
@@ -211,11 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          Container(
-            height: 5,
-            width: screenWidth,
-            color: myOutlineColor,
-          ),
+          myHorizontalLine(colorState: isDataOld()),
           const SizedBox(height: containerSpacing),
 
           // Row 2: Temperature Precipitation, rises
@@ -723,6 +733,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget myHorizontalLine({required bool colorState}) {
+    Color color = colorState ? Colors.red : myOutlineColor;
+    return Container(
+      height: 5,
+      width: screenWidth,
+      color: color,
     );
   }
 }

@@ -31,6 +31,7 @@ class WeatherServices {
   late String _myApiKey;
 
   final Map<String, dynamic> _dailyValuesDefault = {
+    'dt': DateTime.now().toLocal(),
     'summ': 'na',
     'temp1': 'na',
     'temp2': 'na',
@@ -51,6 +52,7 @@ class WeatherServices {
   };
 
   final Map<String, dynamic> _currentValuesDefault = {
+    'dt': DateTime.now().toLocal(),
     'desc': 'na',
     'temp': 'na',
     'prep': 'na',
@@ -115,6 +117,13 @@ class WeatherServices {
     }).toList();
 
     // --- parse into map
+    // time of the day
+    dailyValues['dt'] = DateTime.fromMillisecondsSinceEpoch(dailyData['dt'] * 1000).toLocal();
+    if (kDebugMode) {
+      String tmp = dailyValues['dt'].toString();
+      print('daily value update with time: $tmp');
+    }
+
     // summary of day
     dailyValues['summ'] = dailyData['summary'];
 
@@ -168,6 +177,13 @@ class WeatherServices {
     //if calls to the api are bad, return the default na
     if (aqiData.isEmpty) {
       return currentValues;
+    }
+
+    // time of the day
+    currentValues['dt'] = DateTime.fromMillisecondsSinceEpoch(currentData['dt'] * 1000).toLocal();
+    if (kDebugMode) {
+      String tmp = currentValues['dt'].toString();
+      print('current value update with time: $tmp');
     }
 
     currentValues['desc'] = currentData['weather'][0]['description'];
